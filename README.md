@@ -1,59 +1,56 @@
-# ebook-convert
+# ebook-convert — minimale converter-image
 
-Minimal container image containing the official Calibre `ebook-convert` CLI, built for the EPUB validation/conversion layer in the books stack.
+Headless `ebook-convert` (Calibre CLI) voor de books-stack EPUB-validator.
+Geen GUI, geen VNC, geen webserver, geen Calibre-server — alleen de CLI.
 
-## Current release
+- Base: `debian:bookworm-slim` (gepind op digest)
+- Calibre: officiële binary-bundle `calibre-9.15.0-x86_64.txz` van
+  `download.calibre-ebook.com`, sha256 geverifieerd tijdens de build
+  (`3f5301c0aa51e5fb2d5f6dcd04024ba4e86501ab328ce5d9d6760efccb887990`)
+- Non-root (uid 1000), geen netwerk nodig tijdens conversie (`--network none`)
+- ~970 MB (tegenover 3,57 GB van het LSIO-calibre-desktopimage)
 
-- Calibre: **9.15.0**
-- Base: Debian Bookworm Slim, digest-pinned
-- Architecture: **linux/amd64**
-- Runtime user: UID 1000 (`converter`)
-- No daemon, GUI, VNC or web server
-- Intended runtime: ephemeral, ideally with `--network none`
+## Build
 
-The Calibre binary bundle is downloaded from the official Calibre distribution server and verified during the build with SHA-256:
-
+```sh
+cd /mnt/user/appdata/books-stack/tools/ebook-convert
+./build.sh 1.0.0
 ```
-3f5301c0aa51e5fb2d5f6dcd04024ba4e86501ab328ce5d9d6760efccb887990
-```
 
-## Usage
+## Gebruik
 
-```bash
-docker run --rm \
-  --network none \
-  -v /path/to/input:/input:ro \
-  -v /path/to/output:/output \
+```sh
+docker run --rm --network none \
+  -v /input:/input:ro -v /output:/output \
   ghcr.io/cyxno/ebook-convert:1.0.0 \
   /input/book.epub /output/book.epub
 ```
 
-The writable output directory must be writable by UID 1000.
+## Push naar GHCR + finaliseren
 
-## Build locally
+Auth bestaat nog niet op de Unraid-host. Eenmalig (met een GitHub-PAT met
+`read:packages` + `write:packages`, nooit in dit bestand opslaan):
 
-```bash
-docker build --pull=false -t ghcr.io/cyxno/ebook-convert:1.0.0 .
-docker run --rm ghcr.io/cyxno/ebook-convert:1.0.0 --version
+```sh
+echo <PAT> | docker login ghcr.io -u cyxno --password-stdin
 ```
 
-## Publishing
+Daarna de gehele afronding automatisch (pull, registry-digest, smoke/regressietest,
+digest-pin validator, integratietest):
 
-GitHub Actions publishes the image to GHCR using the repository-scoped `GITHUB_TOKEN`; no personal access token is stored in this repository.
+```sh
+bash "/boot/config/plugins/user.scripts/scripts/Books-stack ghcr finalize/script"
+```
 
-Release 1.0.0 publishes:
+Log: `/mnt/user/appdata/books-stack/logs/ghcr-finalize.log`
 
-- `ghcr.io/cyxno/ebook-convert:1.0.0`
-- `ghcr.io/cyxno/ebook-convert:1.0`
-- `ghcr.io/cyxno/ebook-convert:latest`
+Huidig lokaal image-id: `sha256:e3959a452a6d8c2759d4249facd58c76c861e64bc677a783ab42e400582d8cf7`
+(let op: dit is de **config-digest van de lokale build**, niet de registry manifest-digest;
+die laatste verschijnt pas na push/pull als `RepoDigests`-vermelding).
 
-Production should pin the resulting registry digest rather than relying on a mutable tag.
+## Updaten naar een nieuwe Calibre-versie
 
-## Scope
-
-This image deliberately contains only the Calibre runtime and the small set of Debian runtime libraries needed for `ebook-convert`. It is not intended to run Calibre's desktop UI, content server, library manager or VNC stack.
-
-
-## Release
-
-Current container release: **1.0.0**.
+1. Nieuwe `CALIBRE_VERSION` + `CALIBRE_TXZ_SHA256` in de Dockerfile (sha256 zelf
+   berekenen na download van het officiële txz-bestand).
+2. `./build.sh <nieuwe-versie>`, functioneel testen, pas daarna de validator
+   (`Books-stack epub validator`) op het nieuwe image/digest zetten.
