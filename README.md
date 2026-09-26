@@ -52,3 +52,8 @@ Production should pin the resulting registry digest rather than relying on a mut
 ## Scope
 
 This image deliberately contains only the Calibre runtime and the small set of Debian runtime libraries needed for `ebook-convert`. It is not intended to run Calibre's desktop UI, content server, library manager or VNC stack.
+
+
+## Release
+
+Current container release: **1.0.0**.
