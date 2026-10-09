@@ -54,3 +54,7 @@ die laatste verschijnt pas na push/pull als `RepoDigests`-vermelding).
    berekenen na download van het officiële txz-bestand).
 2. `./build.sh <nieuwe-versie>`, functioneel testen, pas daarna de validator
    (`Books-stack epub validator`) op het nieuwe image/digest zetten.
+
+## License
+
+Repository content: [AGPL-3.0-only](LICENSE) — Cyxno (2026). The bundled Calibre `ebook-convert` CLI remains under its own GPL-3.0 license (see [NOTICE](NOTICE.md) and the [Dockerfile](Dockerfile)).
